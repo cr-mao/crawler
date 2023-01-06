@@ -15,14 +15,14 @@ import (
 )
 
 type Fetcher interface {
-	Get(url string) ([]byte, error)
+	Get(url *Request) ([]byte, error)
 }
 
 type BaseFetch struct {
 }
 
-func (BaseFetch) Get(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+func (BaseFetch) Get(req *Request) ([]byte, error) {
+	resp, err := http.Get(req.Url)
 
 	if err != nil {
 		fmt.Println(err)
@@ -47,7 +47,7 @@ type BrowserFetch struct {
 }
 
 // 模拟浏览器访问
-func (b BrowserFetch) Get(url string) ([]byte, error) {
+func (b BrowserFetch) Get(request *Request) ([]byte, error) {
 
 	client := &http.Client{
 		Timeout: b.Timeout,
@@ -57,11 +57,14 @@ func (b BrowserFetch) Get(url string) ([]byte, error) {
 		transport.Proxy = b.Proxy
 		client.Transport = transport
 	}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", request.Url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("get url failed:%v", err)
 	}
 
+	if len(request.Cookie) > 0 {
+		req.Header.Set("Cookie", request.Cookie)
+	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36")
 
 	resp, err := client.Do(req)
